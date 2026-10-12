@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comunicar • Elo Acessível</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/comunicar.css"><script type="module" src="/comunicar.js"></script></head>
+<body>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<header><a class="brand" href="/">Elo acessível</a><a href="/">Legendas e sessões</a></header>
+<main id="main">
+<div class="hero"><p class="eyebrow">COMUNICAR</p><h1>O que você quer dizer?</h1><p class="intro">Escreva ou escolha uma frase. Depois, fale pelo dispositivo ou mostre a mensagem.</p></div>
+<div class="toolbar"><button id="contrast" aria-pressed="false" type="button">Alto contraste</button><label for="text-size">Tamanho do texto<select id="text-size"><option value="normal">Confortável</option><option value="large">Grande</option><option value="extra">Muito grande</option></select></label></div>
+<div class="welcome-grid communication-grid">
+<section class="card" aria-labelledby="message-heading"><h2 id="message-heading">Minha mensagem</h2><label for="message">Digite sua mensagem</label><textarea id="message" rows="5" maxlength="1000" placeholder="Escreva aqui…" aria-describedby="privacy"></textarea><div class="actions message-actions"><button id="speak-message" class="primary" type="button">Falar mensagem</button><button id="stop" type="button">Parar voz</button><button id="show" type="button">Mostrar em letras grandes</button><button id="erase" type="button">Limpar mensagem</button></div>
+<p id="status" role="status" aria-live="polite"></p><p id="privacy" class="hint">A mensagem não é enviada às sessões nem salva automaticamente. A voz depende do dispositivo; algumas vozes podem usar serviços online.</p>
+<details><summary>Ajustar voz</summary><label for="voice">Voz disponível</label><select id="voice"><option value="">Padrão em português</option></select><label for="rate">Velocidade</label><select id="rate"><option value="0.8">Mais lenta</option><option value="1" selected>Normal</option><option value="1.2">Mais rápida</option></select></details>
+</section>
+<section class="card soft" aria-labelledby="phrases-heading"><h2 id="phrases-heading">Frases prontas</h2><p>Toque para colocar a frase na mensagem. Ela só será falada quando você escolher.</p><div id="phrases" class="phrase-grid"></div><details><summary>Minhas frases</summary><p class="hint">Você pode salvar até 12 frases neste navegador. Em aparelhos compartilhados, outras pessoas poderão vê-las. Use “Apagar minhas frases” ao terminar.</p><form id="add-phrase"><label for="custom">Nova frase</label><input id="custom" maxlength="140" required><button type="submit">Salvar frase neste dispositivo</button></form><div id="saved" class="phrase-grid"></div><button id="delete-saved" type="button">Apagar minhas frases</button></details></section>
+</div>
+<p class="hint">Não é necessário criar conta, abrir sessão ou usar o microfone.</p>
+<dialog id="display" aria-labelledby="display-title"><h2 id="display-title">Minha mensagem</h2><p id="big-message"></p><button id="close-display" type="button" autofocus>Voltar para editar</button></dialog>
+</main><footer><strong>Elo Acessível</strong><span>Comunicação no seu ritmo.</span></footer>
+</body></html>

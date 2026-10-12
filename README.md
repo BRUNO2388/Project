@@ -64,3 +64,14 @@ O teste automatizado cobre autorização, isolamento entre sessões, validação
 Referência da API experimental: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition
 
 Código de projeto comercial; nenhuma licença de redistribuição foi concedida neste repositório. A visibilidade pública do repositório deve ser reavaliada pelo proprietário antes de incluir materiais comerciais reservados.
+
+## Módulo Comunicar
+
+Abra **Comunicar** no topo da página ou acesse `/comunicar`. O módulo abre em outra aba para manter a sessão de legendas disponível. Não exige chave, conta ou sessão.
+
+- Escreva ou escolha uma frase pronta; nada é falado automaticamente.
+- Use **Falar mensagem**, **Parar voz** ou **Mostrar em letras grandes**. Esc ou o botão de voltar fecham a mensagem ampliada.
+- Ajuste contraste, tamanho do texto, velocidade e voz em português, quando disponível no dispositivo.
+- Salve até 12 frases personalizadas, exclusivamente neste navegador, por ação explícita. Em equipamento compartilhado use **Apagar minhas frases**. O texto digitado não é persistido nem enviado ao servidor do aplicativo. A síntese de voz pode depender de serviço online conforme a voz do dispositivo.
+
+Este módulo é uma prancha textual inicial para quem não utiliza fala oral ou tem dificuldade de fala; ainda não inclui pictogramas, varredura por acionador, integração remota das respostas ou avaliação individual de comunicação alternativa. A reprodução de voz e o comportamento com leitores de tela ainda requerem teste nos dispositivos reais.

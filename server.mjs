@@ -8,7 +8,7 @@ const equal = (a, b) => typeof a === 'string' && Buffer.byteLength(a) === Buffer
 const TTL = 4 * 60 * 60 * 1000;
 export function createApp({ adminKey = token(), now = Date.now } = {}) {
   const rooms = new Map();
-  const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+  const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/comunicar': ['comunicar.html', 'text/html'], '/comunicar.js': ['comunicar.js', 'text/javascript'], '/comunicar.css': ['comunicar.css', 'text/css'] };
   const server = http.createServer(async (req, res) => {
     const reply = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); };
     res.setHeader('Cache-Control', 'no-store');
