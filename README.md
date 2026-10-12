@@ -75,3 +75,20 @@ Abra **Comunicar** no topo da página ou acesse `/comunicar`. O módulo abre em 
 - Salve até 12 frases personalizadas, exclusivamente neste navegador, por ação explícita. Em equipamento compartilhado use **Apagar minhas frases**. O texto digitado não é persistido nem enviado ao servidor do aplicativo. A síntese de voz pode depender de serviço online conforme a voz do dispositivo.
 
 Este módulo é uma prancha textual inicial para quem não utiliza fala oral ou tem dificuldade de fala; ainda não inclui pictogramas, varredura por acionador, integração remota das respostas ou avaliação individual de comunicação alternativa. A reprodução de voz e o comportamento com leitores de tela ainda requerem teste nos dispositivos reais.
+
+## Leitura automática e pausas
+
+A opção **Ler novas legendas automaticamente** vem marcada. A leitura acompanha somente os trechos recebidos depois de entrar na sessão, em fila e sem interromper uma frase pela chegada da próxima. É possível ajustar voz em português, velocidade e pausa entre legendas. **Pausar leitura automática** cancela a fila; reativar acompanha as próximas legendas sem repetir o histórico. Limpar ou encerrar a sessão cancela a leitura no próximo recebimento de estado. Se a fila ultrapassar 20 trechos, o aplicativo informa o atraso e interrompe a leitura.
+
+O navegador pode exigir um clique inicial em **Ativar áudio**; não é necessário clicar em cada legenda. O anúncio por leitor de tela fica suprimido enquanto a voz automática estiver marcada, para evitar duas leituras simultâneas. Desmarque a voz automática se preferir seu leitor de tela. A captura do microfone suspende a voz no mesmo aparelho para evitar realimentação; para ouvir ao vivo, abra o link do público em outro dispositivo com fones. O modo telão oculta os controles: saia dele para ajustar o áudio.
+
+Solicitamos `unspokenPunctuation` quando a implementação do navegador expõe essa propriedade experimental. Não há garantia de suporte ou de pontuação gramatical completa. Sem pontuação fornecida, o tratamento conservador acrescenta ponto ao final de cada trecho reconhecido e capitaliza a primeira letra. Um trecho pode não corresponder a uma frase completa. Não são inferidas vírgulas ou perguntas por regras arbitrárias. Vírgulas existentes, texto manual e sinais do reconhecimento são preservados; a prosódia interna depende da voz escolhida. Pontuação contextual consistente ainda requer um serviço de transcrição adequado antes da venda.
+
+Atualização no Windows: pare o servidor com Ctrl+C, extraia o ZIP atualizado completo e execute na pasta nova:
+
+```powershell
+$env:PORT = "8085"
+node .\server.mjs
+```
+
+Abra `http://localhost:8085`, atualize com Ctrl+F5 e crie uma sessão com a nova chave. Reiniciar apaga as sessões temporárias.

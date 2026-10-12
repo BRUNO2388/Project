@@ -1,6 +1,20 @@
+import { punctuate, createReader } from '/reading.js';
 const $ = id => document.getElementById(id);
 let session, state, revision = -1, recognition, listening = false, pending = Promise.resolve();
 const say = message => { $('feedback').textContent = message; };
+let readingBlocked = false;
+const reader = createReader({ synth: window.speechSynthesis, Utterance: window.SpeechSynthesisUtterance,
+  settings: () => ({ rate: Number($('reading-rate').value), pause: Number($('reading-pause').value), voice: $('reading-voice').value }),
+  notify: text => { readingBlocked = true; $('reading-status').textContent = text; }
+});
+function voicesChanged() {
+  const selected = $('reading-voice').value;
+  const voices = window.speechSynthesis?.getVoices().filter(v => /^pt/i.test(v.lang)) || [];
+  $('reading-voice').replaceChildren(new Option('Português do dispositivo', ''), ...voices.map(v => new Option(v.name, v.voiceURI)));
+  if (voices.some(v => v.voiceURI === selected)) $('reading-voice').value = selected;
+}
+voicesChanged(); window.speechSynthesis?.addEventListener('voiceschanged', voicesChanged);
+window.addEventListener('pagehide', () => reader.stop());
 async function api(path, key, data) {
   const response = await fetch(path, { method: data ? 'POST' : 'GET', headers: { Authorization: `Bearer ${key}`, ...(data ? { 'Content-Type': 'application/json' } : {}) }, body: data ? JSON.stringify(data) : undefined, signal: AbortSignal.timeout(10000) });
   const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Falha no servidor.'); return result;
@@ -21,7 +35,10 @@ function draw(next) {
   $('empty').hidden = next.entries.length > 0;
   if (next.ended) { $('empty').querySelector('h2').textContent = 'Sessão encerrada'; $('empty').querySelector('p').textContent = 'Obrigado por participar. As legendas desta sessão foram apagadas.'; stopMic(); document.querySelectorAll('#host-panel button,#host-panel textarea').forEach(el => el.disabled = true); }
   if (atBottom) container.scrollTop = container.scrollHeight;
-  if ($('announce').checked && !session.owner) $('live').textContent = next.entries.filter(e => e.id > previous).slice(-3).map(e => e.text).join(' ');
+  const fresh = previous < 0 ? [] : next.entries.filter(e => e.id > previous);
+  if (!next.entries.length || next.ended) { reader.stop(); $('live').textContent = ''; }
+  if ($('auto-read').checked && !readingBlocked && !listening && !next.ended) fresh.forEach(entry => reader.enqueue(punctuate(entry.text)));
+  if ($('announce').checked && !$('auto-read').checked && !session.owner) $('live').textContent = fresh.slice(-3).map(e => e.text).join(' ');
 }
 async function poll() {
   if (!session) return;
@@ -50,18 +67,34 @@ $('size').onchange = () => { document.body.classList.remove('size-large','size-e
 $('contrast').onclick = () => $('contrast').setAttribute('aria-pressed', document.body.classList.toggle('contrast'));
 $('focus').onclick = () => { const active = document.body.classList.toggle('projecting'); $('focus').setAttribute('aria-pressed', active); $('focus').textContent = active ? 'Sair do telão' : 'Modo telão'; };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('projecting')) $('focus').click(); });
-$('speak').onclick = () => { const text = state?.entries.at(-1)?.text; if (!text) return say('Ainda não há legenda para ler.'); if (!('speechSynthesis' in window)) return say('Leitura por voz indisponível neste navegador.'); speechSynthesis.cancel(); const speech = new SpeechSynthesisUtterance(text); speech.lang = 'pt-BR'; speech.onerror = () => say('Não foi possível reproduzir a voz neste dispositivo.'); speechSynthesis.speak(speech); };
-$('stop-speak').onclick = () => window.speechSynthesis?.cancel();
+$('speak').onclick = () => {
+  if (listening) return say('Pare o microfone para ouvir neste aparelho, ou acompanhe pelo celular com fones.');
+  const text = state?.entries.at(-1)?.text; if (!text) return say('Ainda não há legenda para ler.');
+  reader.stop(); readingBlocked = false; reader.enqueue(punctuate(text));
+};
+$('stop-speak').onclick = () => { $('auto-read').checked = false; reader.stop(); $('reading-status').textContent = 'Leitura pausada. Ative a leitura automática para ouvir as próximas legendas.'; };
+$('auto-read').onchange = () => {
+  reader.stop(); readingBlocked = false; $('live').textContent = '';
+  $('reading-status').textContent = $('auto-read').checked ? 'As próximas legendas serão lidas automaticamente.' : 'Leitura automática desativada.';
+};
+$('activate-audio').onclick = () => {
+  if (listening) return say('Pare o microfone neste aparelho antes de ativar a voz. Use o link do público em outro dispositivo com fones.');
+  reader.stop(); readingBlocked = false; $('auto-read').checked = true; $('live').textContent = '';
+  reader.enqueue('Leitura automática ativada.'); $('reading-status').textContent = 'Acompanhando as próximas legendas.';
+};
 $('microphone').onclick = () => {
   if (listening) { stopMic(); $('mic-status').textContent = 'Microfone parado.'; return; }
   if (!$('consent').checked) return say('Leia e marque o aviso de processamento de áudio antes de iniciar.');
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition || !window.isSecureContext) return say('Transcrição indisponível. Use um navegador compatível em HTTPS ou localhost, ou envie texto manualmente.');
   recognition = new SpeechRecognition(); recognition.lang = 'pt-BR'; recognition.continuous = true; recognition.interimResults = true;
-  recognition.onstart = () => { listening = true; $('microphone').textContent = 'Parar microfone'; $('mic-status').textContent = 'Microfone ativo. Verifique a precisão das legendas.'; say(''); };
+  if ('unspokenPunctuation' in recognition) {
+    try { recognition.unspokenPunctuation = true; } catch {}
+  }
+  recognition.onstart = () => { reader.stop(); listening = true; $('reading-status').textContent = 'Voz suspensa neste aparelho enquanto o microfone estiver ativo, para evitar eco. Ouça pelo link do público em outro dispositivo com fones.'; $('microphone').textContent = 'Parar microfone'; $('mic-status').textContent = 'Microfone ativo. Verifique a precisão das legendas.'; say(''); };
   recognition.onresult = event => {
     let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) { const result = event.results[i]; if (result.isFinal) { const text = result[0].transcript.trim(); if (text) send({ action: 'caption', text: text.slice(0,2000) }).catch(e => { stopMic(); say(`Falha ao enviar legenda: ${e.message} Use o envio manual para reenviar.`); }); } else interim += result[0].transcript; }
+    for (let i = event.resultIndex; i < event.results.length; i++) { const result = event.results[i]; if (result.isFinal) { const text = result[0].transcript.trim(); if (text) send({ action: 'caption', text: punctuate(text.slice(0,1999)) }).catch(e => { stopMic(); say(`Falha ao enviar legenda: ${e.message} Use o envio manual para reenviar.`); }); } else interim += result[0].transcript; }
     $('interim').textContent = interim;
   };
   recognition.onerror = event => { stopMic(); $('mic-status').textContent = `Transcrição interrompida (${event.error}). Verifique permissão e conexão; reinicie quando estiver pronto.`; };
