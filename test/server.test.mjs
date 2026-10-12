@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createApp } from '../server.mjs';
+
+test('Sessões: autorização, isolamento, envio, limpeza, encerramento e expiração', async t => {
+  let clock = Date.now();
+  const { server } = createApp({ adminKey: 'test-only', now: () => clock });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const call = async (path, key, data) => {
+    const res = await fetch(base + path, { method: data ? 'POST' : 'GET', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: data ? JSON.stringify(data) : undefined });
+    return { status: res.status, data: await res.json() };
+  };
+  assert.equal((await call('/api/rooms', 'wrong', { title: 'Teste' })).status, 401);
+  assert.equal((await call('/api/rooms', 'test-only', { title: '' })).status, 400);
+  const { data: first, status } = await call('/api/rooms', 'test-only', { title: 'Culto piloto' });
+  assert.equal(status, 201);
+  const { data: second } = await call('/api/rooms', 'test-only', { title: 'Aula' });
+  const path = `/api/rooms/${first.id}`;
+  assert.equal((await call(path, second.viewer)).status, 403);
+  assert.equal((await call(path, first.viewer, { action: 'caption', text: 'Invasão' })).status, 403);
+  assert.equal((await call(path, first.owner, { action: 'caption', text: 'Bem-vindos. Descrição: uma sala iluminada.' })).status, 200);
+  let result = (await call(path, first.viewer)).data;
+  assert.equal(result.entries.length, 1); assert.equal(result.title, 'Culto piloto'); assert.equal(result.owner, undefined);
+  assert.equal((await call(path, first.owner, { action: 'caption', text: 'a'.repeat(2001) })).status, 400);
+  assert.equal((await call(`/api/rooms/${second.id}`, second.viewer)).data.entries.length, 0);
+  await call(path, first.owner, { action: 'clear' });
+  assert.equal((await call(path, first.viewer)).data.entries.length, 0);
+  await call(path, first.owner, { action: 'caption', text: 'Fim.' });
+  await call(path, first.owner, { action: 'end' });
+  result = (await call(path, first.viewer)).data;
+  assert.equal(result.ended, true); assert.deepEqual(result.entries, []);
+  assert.equal((await call(path, first.owner, { action: 'caption', text: 'Não pode' })).status, 409);
+  clock += 4 * 60 * 60 * 1000 + 1;
+  assert.equal((await call(`/api/rooms/${second.id}`, second.viewer)).status, 404);
+  const home = await fetch(base); assert.equal(home.status, 200); assert.match(await home.text(), /lang="pt-BR"/);
+  assert.match(home.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+  assert.equal((await fetch(base + '/server.mjs')).status, 404);
+});
